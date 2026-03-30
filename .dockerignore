@@ -1,0 +1,17 @@
+node_modules/
+npm-debug.log
+.env
+.git
+.gitignore
+*.json
+!package.json
+!package-lock.json
+favorites.json
+guildSettings.json
+Dockerfile
+.dockerignore
+LICENSE
+README.md
+implementation_plan.md
+task.md
+walkthrough.md

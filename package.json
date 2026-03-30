@@ -1,10 +1,17 @@
 {
   "name": "png-music-public",
-  "version": "1.1.0",
-  "description": "Discord music bot using Public Lavalink Nodes",
+  "version": "1.0.0",
+  "description": "A high-performance Discord music bot with Public Lavalink Nodes",
   "main": "index.js",
+  "author": "PrinceMV",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "deploy": "node index.js --deploy"
   },
   "dependencies": {
     "discord.js": "^14.15.3",

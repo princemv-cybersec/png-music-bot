@@ -1,61 +1,110 @@
 # PNG Music Bot (Public Node Version) 🚀
 
-A high-performance Discord music bot built with **Node.js**, **Discord.js v14**, and **Shoukaku**. This version runs purely on **Public Lavalink Nodes**, meaning no local Java or `Lavalink.jar` is required.
+A high-performance Discord music bot built with **Node.js**, **Discord.js v14**, and **Shoukaku**. This version runs purely on **Public Lavalink Nodes**, meaning no local Java or `Lavalink.jar` is required for audio processing.
+
+---
 
 ## 🏗️ Features
 
-- **Zero Resource Usage:** Use external public nodes for audio processing.
-- **Failover System:** Automatically switches between multiple public nodes if one goes offline.
-- **Dynamic Controller:** Interactive embed with progress bars and buttons.
-- **Custom Queue:** Advanced `active` and `backlog` management for large playlists.
-- **Dual Commands:** Supports both `/` Slash Commands and `!` Prefix Commands.
+- **Zero Local Resource Usage:** Audio processing is handled by external public Lavalink nodes.
+- **Failover System:** Automatically switches between multiple public nodes if one goes offline or is rate-limited.
+- **Interactive Controller:** Real-time progress bars, skip/pause/loop buttons, and dynamic status updates.
+- **Advanced Queueing:** Manage `active` and `backlog` tracks with ease—supports massive playlists.
+- **Slash & Prefix Commands:** Full support for `/` slash commands (auto-registered) and traditional `!` prefix commands.
+- **Persistence:** Remembers volume settings and loop modes across sessions.
 
-## 🛠️ Setup
+---
 
-1. **Install Dependencies:**
+## 🛠️ Setup Guide
 
+### 1. Discord Developer Portal
+1. Create a new application at [Discord Developer Portal](https://discord.com/developers/applications).
+2. Navigate to the **Bot** tab and click **Add Bot**.
+3. **IMPORTANT**: Enable the following **Privileged Gateway Intents**:
+   - `Presence Intent` (Optional)
+   - `Server Members Intent` (Optional)
+   - `Message Content Intent` (REQUIRED for prefix commands)
+4. Copy your **Bot Token**.
+
+### 2. Installation
+1. Ensure you have **Node.js 18.0.0** or higher installed.
+2. Clone the repository:
+   ```bash
+   git clone https://github.com/princemv-cybersec/Png-Music.git
+   cd Png-Music
+   ```
+3. Install dependencies:
    ```bash
    npm install
    ```
 
-2. **Configure environment:**
-   - Copy `.env.example` to a new file named `.env`.
-   - Edit the `.env` file with your `DISCORD_TOKEN` and any additional public nodes you want to use.
+### 3. Configuration
+1. Copy `.env.example` to a new file named `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+2. Open `.env` and paste your `DISCORD_TOKEN`.
 
-3. **Start the bot:**
-   Using Node:
-   ```bash
-   node index.js
-   ```
-   Using PM2:
-   ```bash
-   pm2 start ecosystem.config.js
-   ```
+### 4. Start the Bot
+- **Using Node:**
+  ```bash
+  npm start
+  ```
+- **Using PM2 (Recommended for 24/7):**
+  ```bash
+  pm2 start ecosystem.config.js
+  ```
+- **Using Docker:**
+  ```bash
+  docker build -t png-music-bot .
+  docker run -d --name png-music-bot --env-file .env png-music-bot
+  ```
+
+---
 
 ## 🌐 Public Lavalink Nodes
 
-These nodes are included in `config.js` as defaults:
+The bot includes several default high-quality public nodes in `config.js`. You can add more in your `.env` file using the `LAVALINK_NODES` variable.
 
-| Name      | Host                       | Port | Password                        | Secure |
-| --------- | -------------------------- | ---- | ------------------------------- | ------ |
-| Serenetia | `lavalinkv4.serenetia.com` | 443  | `https://dsc.gg/ajidevserver`   | Yes    |
-| AjieBlogs | `lava-v4.ajieblogs.eu.org` | 443  | `https://dsc.gg/ajidevserver`   | Yes    |
-| MilloHost | `lava-v4.millohost.my.id`  | 443  | `https://discord.gg/mjS5J2K3ep` | Yes    |
+| Service   | Host                       | Port | Secure |
+| --------- | -------------------------- | ---- | ------ |
+| Serenetia | `lavalinkv4.serenetia.com` | 443  | Yes    |
+| AjieBlogs | `lava-v4.ajieblogs.eu.org` | 443  | Yes    |
+| MilloHost | `lava-v4.millohost.my.id`  | 443  | Yes    |
 
-> [!TIP]
-> The bot automatically fails over to the next available node if one goes offline or is rate-limited.
+---
 
 ## 📜 Commands
 
-- `/play [query]` or `!play [query]` - Play music.
-- `/help` or `!help` - Show all available commands.
-- `/skip` or `!skip` - Skip to the next track.
-- `/stop` or `!stop` - Stop playback and leave VC.
-- `/pause` / `/resume` - Control playback.
-- `/queue` - Show current queue.
-- `/nowplaying` - Show current song info.
-- `/loop [mode]` - Set loop mode (off, track, queue).
-- `/volume [level]` - Change volume (0-150).
-- `/shuffle` - Shuffle tracks.
-- `/clearqueue` - Clear all tracks.
-- `/ping` - Check latency.
+| Slash Command | Prefix Command | Description |
+| ------------- | -------------- | ----------- |
+| `/play [query]` | `!play [query]` | Plays a song/playlist from YouTube/Spotify/SoundCloud. |
+| `/skip` | `!skip` | Skips the current track. |
+| `/stop` | `!stop` | Stops playback and leaves the voice channel. |
+| `/pause` | `!pause` | Pauses playback. |
+| `/resume` | `!resume` | Resumes playback. |
+| `/queue` | `!queue` | Lists the current tracks in the queue. |
+| `/nowplaying` | `!np` | Shows detailed info about the current song. |
+| `/loop [mode]`| `!loop [mode]` | Set loop to `off`, `track`, or `queue`. |
+| `/volume` | `!vol [0-150]` | Changes the player volume. |
+| `/shuffle` | `!shuffle` | Shuffles the current queue. |
+| `/clearqueue` | `!clear` | Clears all tracks from the queue. |
+| `/ping` | `!ping` | Check the bot's latency. |
+
+---
+
+## ❓ Troubleshooting
+
+- **"No players found"**: Ensure the bot is in a voice channel.
+- **"Node disconnected"**: The public node might be down; the bot will automatically try the next one in the list.
+- **Command not registering**: If slash commands don't appear, restart the bot; it registers them globally on every startup.
+- **429 Errors**: The public node is being rate-limited by the platform (e.g., YouTube). Shoukaku will attempt to migrate to a different node.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+**Made with ❤️ by PrinceMV**
