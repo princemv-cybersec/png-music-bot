@@ -1,3 +1,5 @@
+![PNG Music Bot Banner](assets/banner.png)
+
 # PNG Music Bot (Public Node Version) 🚀
 
 A high-performance Discord music bot built with **Node.js**, **Discord.js v14**, and **Shoukaku**. This version runs purely on **Public Lavalink Nodes**, meaning no local Java or `Lavalink.jar` is required for audio processing.
