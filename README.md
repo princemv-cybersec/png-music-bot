@@ -1,4 +1,4 @@
-![PNG Music Bot Banner](assets/banner.png)
+![PNG Music Bot Banner](assets/banner_v2.png)
 
 # PNG Music Bot (Public Node Version) 🚀
 
