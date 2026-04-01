@@ -2,6 +2,27 @@ const { SlashCommandBuilder } = require('discord.js');
 const PlayerManager = require('../playerManager');
 const { requireVCPermissions } = require('../utils/checks');
 
+/**
+ * Attempt to join a voice channel with timeout protection.
+ * Extracted so it can be called for retry on auto-recovery.
+ */
+async function _attemptJoin(client, interaction, voiceChannel) {
+  const joinPromise = client.shoukaku.joinVoiceChannel({
+    guildId: interaction.guild.id,
+    channelId: voiceChannel.id,
+    shardId: interaction.guild.shardId,
+    deaf: true
+  });
+
+  const timeoutPromise = new Promise((_, reject) => 
+    setTimeout(() => reject(new Error('Connection timed out')), 20000)
+  );
+
+  const player = await Promise.race([joinPromise, timeoutPromise]);
+  if (!player.setup) PlayerManager.setupPlayer(client, player);
+  return player;
+}
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('play')
@@ -42,6 +63,18 @@ module.exports = {
     const existingConn = client.shoukaku.connections.get(interaction.guild.id);
     const currentChannel = existingConn?.channelId;
 
+    // Health check: if we have a player but the connection state looks dead, nuke it
+    if (player && existingConn) {
+        const connState = existingConn.state;
+        // Shoukaku connection states: 0=CONNECTING, 1=NEARLY, 2=CONNECTED, 3=RECONNECTING, 4=DISCONNECTING, 5=DISCONNECTED
+        if (connState >= 4 || (!existingConn.sessionId && !existingConn.serverUpdate)) {
+            console.log(`[Player] ${interaction.guild.id} Stale connection detected (state=${connState}). Cleaning up.`);
+            PlayerManager.cleanup(client, interaction.guild.id);
+            await client.shoukaku.leaveVoiceChannel(interaction.guild.id).catch(() => null);
+            player = null;
+        }
+    }
+
     if (player && currentChannel !== voiceChannel.id) {
         console.log(`[Player] ${interaction.guild.id} Moving player to ${voiceChannel.id}`);
         await client.shoukaku.leaveVoiceChannel(interaction.guild.id).catch(() => null);
@@ -51,28 +84,34 @@ module.exports = {
     if (!player) {
         try {
           client.joinLocks.add(interaction.guild.id);
-          
-          // Join with timeout protection
-          const joinPromise = client.shoukaku.joinVoiceChannel({
-            guildId: interaction.guild.id,
-            channelId: voiceChannel.id,
-            shardId: interaction.guild.shardId,
-            deaf: true
-          });
-
-          // 20-second timeout for join
-          const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Connection timed out')), 20000)
-          );
-
-          player = await Promise.race([joinPromise, timeoutPromise]);
-          if (!player.setup) PlayerManager.setupPlayer(client, player);
+          player = await _attemptJoin(client, interaction, voiceChannel);
           
         } catch (error) {
           console.error(`[Player] ${interaction.guild.id} Join error:`, error);
+          
+          // Check for existing connection errors first
           if (error.message.includes('existing connection') || error.message.includes('already have')) {
              player = client.shoukaku.players.get(interaction.guild.id);
              if (player && !player.setup) PlayerManager.setupPlayer(client, player);
+          } 
+          // Auto-recovery: if it was a timeout, nuke stale state and retry ONCE
+          else if (error.message.includes('not established') || error.message.includes('timed out') || error.message.includes('15 seconds')) {
+            console.log(`[Player] ${interaction.guild.id} Connection timeout — attempting auto-recovery...`);
+            
+            // Force-clean the stale connection
+            PlayerManager.cleanup(client, interaction.guild.id);
+            await client.shoukaku.leaveVoiceChannel(interaction.guild.id).catch(() => null);
+            
+            // Small delay to let Discord gateway settle
+            await new Promise(r => setTimeout(r, 2000));
+            
+            try {
+              player = await _attemptJoin(client, interaction, voiceChannel);
+              console.log(`[Player] ${interaction.guild.id} Auto-recovery succeeded!`);
+            } catch (retryError) {
+              console.error(`[Player] ${interaction.guild.id} Auto-recovery failed:`, retryError);
+              return interaction.editReply('Failed to join voice channel after retry. The voice server may be temporarily unavailable.');
+            }
           } else {
             return interaction.editReply('Failed to join voice channel (Timeout/Error). Check node status!');
           }
